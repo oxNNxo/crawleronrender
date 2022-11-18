@@ -17,9 +17,12 @@ webapp.logger.setLevel(logging.WARNING)
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=config.LOGGING_LEVEL)
 logger = logging.getLogger('App')
 
-# if __name__ == '__main__':
-
-	
+if __name__ == '__main__':
+	t = threading.Thread(target=app.my_job)
+	t.start()
+	logger.info('Crawler on render is started.')
+	service.check_ptt_newfeed()
+	app.run()
 # 	app.run()
 
 
@@ -40,8 +43,6 @@ def webhook_handler():
 	return 'ok'
 
 def run() -> None:
-	t = threading.Thread(target=app.my_job)
-	t.start()
-	logger.info('Crawler on render is started.')
-	service.check_ptt_newfeed()
-	app.run(host=config.HOST, port=config.PORT)
+	webapp.run(host=config.HOST, port=config.PORT)
+	
+	
