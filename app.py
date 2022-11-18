@@ -5,6 +5,7 @@ import time
 import schedule
 
 import app
+import bot
 import service
 import config
 
@@ -16,7 +17,8 @@ if __name__ == '__main__':
 	t = threading.Thread(target=app.my_job)
 	t.start()
 	logger.info('Crawler on render is started.')
-	service.check_ptt_newfeed()
+	bot.run()
+
 
 
 def my_job():

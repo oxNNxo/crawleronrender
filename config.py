@@ -18,3 +18,6 @@ PTT_CRAWLER_PERIOD = int(os.getenv('PTT_CRAWLER_PERIOD',10))
 
 TELEGRAM_ALERT_TOKEN = os.getenv('TELEGRAM_ALERT_TOKEN')
 TELEGRAM_MY_CHAT_ROOM = os.getenv('TELEGRAM_MY_CHAT_ROOM')
+
+HOST = os.getenv('HOST')
+PORT = int(os.getenv('PORT', 5000))
