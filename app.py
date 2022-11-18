@@ -8,7 +8,6 @@ from flask import Flask, request
 
 
 import app
-import bot
 import service
 import config
 
@@ -37,12 +36,12 @@ def my_job():
 
 @webapp.route('/')
 def webhook_handler():
-    """Set route /hook with POST method will trigger this method."""
-    return 'ok'
+	"""Set route /hook with POST method will trigger this method."""
+	return 'ok'
 
 def run() -> None:
 	t = threading.Thread(target=app.my_job)
 	t.start()
 	logger.info('Crawler on render is started.')
-    service.check_ptt_newfeed()
-    app.run(host=config.HOST, port=config.PORT)
+	service.check_ptt_newfeed()
+	app.run(host=config.HOST, port=config.PORT)
