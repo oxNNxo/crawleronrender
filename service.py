@@ -36,6 +36,15 @@ def tgNotifyMessage(msg):
 	response = requests.get(url,headers = headers)
 
 
+def wake_up_myself():
+    logger.info('wake_up_myself')
+    url = MYSELF_URL.MYSELF_URL
+    try:
+        conn = requests.get(url)
+    except Exception as e:
+        logger.error(str(e), exc_info=True)
+
+
 def reurl(token,origin_url):
 	reurl_headers = {
 		"Content-Type" : "application/json" ,

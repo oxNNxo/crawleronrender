@@ -4,15 +4,13 @@ import time
 
 import schedule
 
-from flask import Flask, request
-
 
 import app
+import bot
 import service
 import config
 
-webapp = Flask(__name__)
-webapp.logger.setLevel(logging.WARNING)
+
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=config.LOGGING_LEVEL)
 logger = logging.getLogger('App')
@@ -21,14 +19,14 @@ if __name__ == '__main__':
 	t = threading.Thread(target=app.my_job)
 	t.start()
 	logger.info('Crawler on render is started.')
-	service.check_ptt_newfeed()
-	app.run()
-# 	app.run()
+	bot.run()
+
 
 
 
 def my_job():
 	schedule.every(config.PTT_CRAWLER_PERIOD).minutes.do(service.check_ptt_newfeed)
+    schedule.every(config.WAKE_UP_MYSELF_PERIOD).minutes.do(service.wake_up_myself)
 
 	while True:
 		schedule.run_pending()
@@ -37,12 +35,6 @@ def my_job():
 
 
 
-@webapp.route('/')
-def webhook_handler():
-	"""Set route /hook with POST method will trigger this method."""
-	return 'ok'
 
-def run() -> None:
-	webapp.run(host=config.HOST, port=config.PORT)
 	
 	
