@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 def my_job():
 	schedule.every(config.PTT_CRAWLER_PERIOD).minutes.do(service.check_ptt_newfeed)
-    schedule.every(config.WAKE_UP_MYSELF_PERIOD).minutes.do(service.wake_up_myself)
+	schedule.every(config.WAKE_UP_MYSELF_PERIOD).minutes.do(service.wake_up_myself)
 
 	while True:
 		schedule.run_pending()
