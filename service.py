@@ -323,7 +323,7 @@ def update_capital_fund_latest_day(fld_list):
 
 
 def check_capitalfund_newfeed():
-	logger.info('Checking for capitalfund newfeed')
+	logger.info('Checking for capital fund newfeed')
 	today = datetime.datetime.now(tz).date()
 	capital_fund_list = get_capital_user_subs_fund_id_with_latest_day()
 	cfl = {}
@@ -343,7 +343,7 @@ def check_capitalfund_newfeed():
 		latest_date = datetime.datetime.strptime(cfl[fund_id]['latest_day'], '%Y-%m-%d %H:%M:%S+08').date()
 		if latest_date != today:
 			try:
-				capifund = crawl_capital(fund)
+				capifund = crawl_capital(fund_id)
 				today_str = today.strftime('%Y-%m-%d')
 				fundName = capifund['data']['fundName']
 				fundShortname = capifund['data']['shortName']
@@ -357,7 +357,7 @@ def check_capitalfund_newfeed():
 					for user_id in cfl[fund_id]['user']:
 						lineNotifyMessage(msg,user_chat_id[user_id])
 			except Exception as e:
-				tgNotifyMessage('Error when crawl '+fund+str(e))
+				tgNotifyMessage('Error when crawl '+fund_id+str(e))
 				continue
 	if len(fld_list) > 0 :
 		done = 0
