@@ -38,7 +38,7 @@ def tgNotifyMessage(msg):
 
 def wake_up_myself():
     logger.info('wake_up_myself')
-    url = MYSELF_URL.MYSELF_URL
+    url = config.MYSELF_URL
     try:
         conn = requests.get(url)
     except Exception as e:
