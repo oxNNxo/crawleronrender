@@ -17,6 +17,8 @@ pool = datasource.get_pool()
 
 token_reurl = [config.REURL_TOKEN1,config.REURL_TOKEN2,config.REURL_TOKEN3]
 
+tz = datetime.timezone(datetime.timedelta(hours=+8))
+
 def lineNotifyMessage(msg,token):
 	line_headers = {
 		"Authorization": "Bearer " + token,
@@ -66,7 +68,7 @@ def reurl(token,origin_url):
 		return r.text
 
 
-def get_user_subs_board_with_latest_time():
+def get_pyptt_user_subs_board_with_latest_time():
 	conn = pool.getconn()
 	all_results = []
 	with conn:
@@ -83,26 +85,30 @@ def get_user_subs_board_with_latest_time():
 	return all_results
 
 
-def get_user_board_key():
+def get_pyptt_user_board_key():
 	conn = pool.getconn()
 	all_results = []
 	with conn:
 		with conn.cursor() as cursor: 
-			sql = '''SELECT pus.user_id,pus.board,pus.sub_key 
-				FROM pyptt_user_subs as pus '''
+			sql = '''
+				SELECT pus.user_id,pus.board,pus.sub_key 
+				FROM pyptt_user_subs as pus
+				'''
 			cursor.execute(sql)
 			all_results = cursor.fetchall()
 	pool.putconn(conn, close=True)
 	return all_results
 
 
-def get_user_chat_room_id():
+def get_pyptt_user_chat_room_id():
 	conn = pool.getconn()
 	all_results = []
 	with conn:
 		with conn.cursor() as cursor: 
-			sql = '''SELECT pu.id,pu.chat_id 
-				FROM pyptt_user as pu '''
+			sql = '''
+				SELECT pu.id,pu.chat_id 
+				FROM pyptt_user as pu
+				'''
 			cursor.execute(sql)
 			all_results = cursor.fetchall()
 	pool.putconn(conn, close=True)
@@ -141,7 +147,7 @@ def crawl_ptt(board):
 	return articlelist
 
 
-def update_board_latest_time(blt_list):
+def update_pyptt_board_latest_time(blt_list):
 	conn = pool.getconn()
 	all_results = []
 	with conn:
@@ -159,12 +165,12 @@ def update_board_latest_time(blt_list):
 
 def check_ptt_newfeed():
 	logger.info('Checking for ptt newfeed')
-	board_latest_time = get_user_subs_board_with_latest_time()
+	board_latest_time = get_pyptt_user_subs_board_with_latest_time()
 	blt = {}
 	for pair in board_latest_time:
 		blt[pair[0]] = {}
 		blt[pair[0]]['pre_latest_time'] = pair[1]
-	all_results = get_user_board_key()
+	all_results = get_pyptt_user_board_key()
 	ubk = {}
 	for pair in all_results:
 		if pair[0] not in ubk:
@@ -172,7 +178,7 @@ def check_ptt_newfeed():
 		if pair[1] not in ubk[pair[0]]:
 			ubk[pair[0]][pair[1]] = []
 		ubk[pair[0]][pair[1]].append(pair[2])
-	all_results = get_user_chat_room_id()
+	all_results = get_pyptt_user_chat_room_id()
 	user_chat_id = {}
 	for pair in all_results:
 		user_chat_id[pair[0]] = pair[1]
@@ -225,19 +231,145 @@ def check_ptt_newfeed():
 		pass
 	update_latesttime = list()
 	for boardName in blt:
-		update_latesttime.append((blt[boardName]['now_latest_time'],boardName))
-	done = 0
-	while done == 0:
-		try:
-			update_board_latest_time(update_latesttime)
-			done = 1
-			logger.info('Checking for ptt newfeed successfully')
-		except Exception as e:
-			tgNotifyMessage('Update PyPTT error:'+str(e))
-			logger.error(str(e))
+		if blt[boardName]['now_latest_time'] != blt[boardName]['pre_latest_time']:
+			update_latesttime.append((blt[boardName]['now_latest_time'],boardName))
+	if len(update_latesttime) > 0:
+		done = 0
+		while done == 0:
+			try:
+				update_pyptt_board_latest_time(update_latesttime)
+				done = 1
+				logger.info('Update ptt newfeed successfully')
+			except Exception as e:
+				tgNotifyMessage('Update PyPTT board list error:'+str(e))
+				logger.error(str(e))
+	logger.info('Checking for ptt newfeed successfully')
 
 
 
+def get_capital_user_subs_fund_id_with_latest_day():
+	conn = pool.getconn()
+	all_results = []
+	with conn:
+		with conn.cursor() as cursor:
+			sql = '''
+				SELECT cus.fund_id,to_char(cfl.latest_day at time zone 'asia/taipei','yyyy-mm-dd HH24:MI:SS+08') 
+				FROM capital_user_subs as cus , capital_fund_list as cfl 
+				where cus.fund_id = cfl.fund_id 
+				GROUP BY cus.fund_id , cfl.latest_day
+				'''
+			cursor.execute(sql)
+			all_results = cursor.fetchall()
+	pool.putconn(conn, close=True)
+	return all_results
+
+
+def get_capital_user_fund_id():
+	conn = pool.getconn()
+	all_results = []
+	with conn:
+		with conn.cursor() as cursor: 
+			sql = '''
+				SELECT cus.user_id,cus.fund_id
+				FROM capital_user_subs as cus
+				'''
+			cursor.execute(sql)
+			all_results = cursor.fetchall()
+	pool.putconn(conn, close=True)
+	return all_results
+
+
+def get_capital_user_chat_room_id():
+	conn = pool.getconn()
+	all_results = []
+	with conn:
+		with conn.cursor() as cursor: 
+			sql = '''
+				SELECT cu.id,cu.chat_id 
+				FROM capital_user as cu
+				'''
+			cursor.execute(sql)
+			all_results = cursor.fetchall()
+	pool.putconn(conn, close=True)
+	return all_results
+
+
+def crawl_capital(fundId):
+	startday = (datetime.datetime.now()-datetime.timedelta(days=7)).strftime('%Y-%m-%d')
+	today = datetime.datetime.now().strftime('%Y-%m-%d')
+	my_data = {"fundId":fundId,"start":startday,"end":today}
+	try:
+		# capiresp = requests.post(url='https://www.capitalfund.com.tw/CFWeb/api/fundnav/history',data = my_data)
+		capiresp = requests.get(url='https://www.capitalfund.com.tw/CFWeb/api/fund/detail/'+fundId)
+	except:
+		return -1
+	return json.loads(capiresp.text)
+
+
+def update_capital_fund_latest_day(fld_list):
+	conn = pool.getconn()
+	all_results = []
+	with conn:
+		with conn.cursor() as cursor: 
+			for blt in fld_list:
+				sql = '''
+				UPDATE capital_fund_list
+				SET latest_day = TIMESTAMP with time zone %s
+				WHERE fund_id = %s;
+				COMMIT;
+				'''
+				cursor.execute(sql,(blt[0],blt[1]))
+	pool.putconn(conn, close=True)
+
+
+def check_capitalfund_newfeed():
+	logger.info('Checking for capitalfund newfeed')
+	today = datetime.datetime.now(tz).date()
+	capital_fund_list = get_capital_user_subs_fund_id_with_latest_day()
+	cfl = {}
+	for pair in capital_fund_list:
+		cfl[pair[0]] ={} 
+		cfl[pair[0]]['latest_day'] = pair[1]
+		cfl[pair[0]]['user'] = list()
+	user_fund_id = get_capital_user_fund_id()
+	for pair in user_fund_id:
+		cfl[pair[1]]['user'].append(pair[0])
+	user_chat_id_list = get_capital_user_chat_room_id()
+	user_chat_id = {}
+	for pair in user_chat_id_list:
+		user_chat_id[pair[0]] = pair[1]
+	fld_list = []
+	for fund_id in cfl:
+		latest_date = datetime.datetime.strptime(cfl[fund_id]['latest_day'], '%Y-%m-%d %H:%M:%S+08').date()
+		if latest_date != today:
+			try:
+				capifund = crawl_capital(fund)
+				today_str = today.strftime('%Y-%m-%d')
+				fundName = capifund['data']['fundName']
+				fundShortname = capifund['data']['shortName']
+				latestday = capifund['data']['netDate'][:10]
+				netValue = capifund['data']['netValue']
+				netPercent = capifund['data']['netPercent']
+				if latestday == today_str :
+					msg = fundShortname + '\n' + today_str + '\n淨值：' + netValue + '\n漲跌幅：' + netPercent + '%'
+					logger.info(msg)
+					fld_list.append((today_str+'+08',fund_id))
+					for user_id in cfl[fund_id]['user']:
+						lineNotifyMessage(msg,user_chat_id[user_id])
+			except Exception as e:
+				tgNotifyMessage('Error when crawl '+fund+str(e))
+				continue
+	if len(fld_list) > 0 :
+		done = 0
+		while done == 0:
+			try:
+				update_capital_fund_latest_day(fld_list)
+				done = 1
+				logger.info('Update capital fund newfeed successfully')
+			except Exception as e:
+				tgNotifyMessage('Update capital fund list error:'+str(e))
+				logger.error(str(e))
+	logger.info('Checking for capital fund newfeed successfully')
 
 
 def simple_sql(sql):

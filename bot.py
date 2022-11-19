@@ -21,5 +21,4 @@ def webhook_handler():
 	return 'ok'
 
 def run() -> None:
-	service.check_ptt_newfeed()
 	webapp.run(host=config.HOST, port=config.PORT)
